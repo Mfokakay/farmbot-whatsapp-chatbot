@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FarmBot – Farming Supplies Chatbot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #e5ddd5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 420px;
+      height: 90vh;
+      max-height: 800px;
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #075e54;
+      color: #fff;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .avatar {
+      width: 42px; height: 42px;
+      background: #25d366;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .header-info .name { font-weight: 600; font-size: 16px; }
+    .header-info .status { font-size: 12px; color: #b2dfdb; margin-top: 1px; }
+
+    /* ── Chat area ── */
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 10px;
+      background: #e5ddd5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .bubble {
+      max-width: 82%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+      word-break: break-word;
+    }
+    .bubble .time {
+      font-size: 10px;
+      color: #999;
+      text-align: right;
+      margin-top: 4px;
+    }
+    .bubble.user {
+      background: #dcf8c6;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+    .bubble.bot {
+      background: #fff;
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+
+    /* Quick-reply chips */
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .chip {
+      background: #e8f5e9;
+      border: 1px solid #a5d6a7;
+      color: #1b5e20;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .chip:hover { background: #c8e6c9; }
+
+    /* Product card inside bubble */
+    .product-card {
+      background: #f0f0f0;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 6px;
+    }
+    .product-card .prod-name { font-weight: 600; color: #075e54; }
+    .product-card .prod-price { font-size: 13px; color: #555; margin-top: 2px; }
+
+    /* Cart summary */
+    .cart-line {
+      font-size: 13px;
+      padding: 3px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .cart-total {
+      font-weight: 700;
+      color: #075e54;
+      margin-top: 4px;
+      font-size: 14px;
+    }
+
+    /* ── Input bar ── */
+    .input-bar {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      background: #f0f0f0;
+      border-top: 1px solid #ddd;
+      gap: 8px;
+    }
+    .input-bar input {
+      flex: 1;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 14px;
+      font-size: 14px;
+      background: #fff;
+      outline: none;
+    }
+    .input-bar button {
+      width: 42px; height: 42px;
+      background: #075e54;
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .input-bar button:hover { background: #128c7e; }
+
+    /* Typing indicator */
+    .typing {
+      display: flex; gap: 4px; align-items: center;
+      padding: 8px 12px;
+      background: #fff;
+      border-radius: 8px;
+      align-self: flex-start;
+      width: 56px;
+    }
+    .typing span {
+      width: 7px; height: 7px;
+      background: #aaa;
+      border-radius: 50%;
+      animation: bounce 1s infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.30s; }
+    @keyframes bounce {
+      0%,60%,100% { transform: translateY(0); }
+      30%          { transform: translateY(-6px); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="avatar">🌾</div>
+    <div class="header-info">
+      <div class="name">FarmBot</div>
+      <div class="status">Online – farming supplies assistant</div>
+    </div>
+  </div>
+
+  <!-- Chat messages -->
+  <div class="chat" id="chat"></div>
+
+  <!-- Input -->
+  <div class="input-bar">
+    <input id="input" type="text" placeholder="Type a message…" autocomplete="off"/>
+    <button onclick="sendMessage()">➤</button>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  let state = 'welcome';   // tracks which menu level the user is at
+  let cart  = [];          // shopping cart array
+
+  // ── Product catalogue ─────────────────────────────────────────────────────
+  const catalogue = {
+    crops: [
+      { id: 'c1', name: 'Maize Seeds (5 kg bag)',       price: 149 },
+      { id: 'c2', name: 'Tomato Seeds (100 g pack)',    price: 89  },
+      { id: 'c3', name: 'Fertiliser – LAN (50 kg bag)', price: 389 },
+      { id: 'c4', name: 'Garden Fork',                  price: 225 },
+      { id: 'c5', name: 'Irrigation Drip Kit (20 m)',   price: 599 },
+    ],
+    animals: [
+      { id: 'a1', name: 'Chicken Feed (50 kg bag)',     price: 329 },
+      { id: 'a2', name: 'Cattle Dip – Amitraz 1 L',    price: 199 },
+      { id: 'a3', name: 'Ivermectin Injection 50 mL',  price: 279 },
+      { id: 'a4', name: 'Hay Bale (Eragrostis)',        price: 95  },
+      { id: 'a5', name: 'Mineral Lick Block 5 kg',      price: 175 },
+    ],
+  };
+
+  // Current product list displayed to user
+  let currentProducts = [];
+  let waitingForQty   = null; // product user just selected
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function now() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function rand(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  // ── Render a message bubble ───────────────────────────────────────────────
+  function addBubble(who, html, chips = []) {
+    const chat = document.getElementById('chat');
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + who;
+    bubble.innerHTML = html + `<div class="time">${now()}</div>`;
+
+    if (chips.length) {
+      const chipRow = document.createElement('div');
+      chipRow.className = 'chips';
+      chips.forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = 'chip';
+        btn.textContent = c.label;
+        btn.onclick = () => {
+          document.getElementById('input').value = c.value;
+          sendMessage();
+        };
+        chipRow.appendChild(btn);
+      });
+      bubble.appendChild(chipRow);
+    }
+
+    chat.appendChild(bubble);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  // ── Typing animation then bot reply ──────────────────────────────────────
+  function botReply(html, chips = [], delay = rand(600, 1200)) {
+    const chat = document.getElementById('chat');
+
+    // Show typing dots
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.innerHTML = '<span></span><span></span><span></span>';
+    chat.appendChild(typing);
+    chat.scrollTop = chat.scrollHeight;
+
+    setTimeout(() => {
+      typing.remove();
+      addBubble('bot', html, chips);
+    }, delay);
+  }
+
+  // ── Build product list HTML ───────────────────────────────────────────────
+  function productsHtml(list) {
+    let html = 'Reply with a number to select a product:<br>';
+    list.forEach((p, i) => {
+      html += `
+        <div class="product-card">
+          <div class="prod-name">${i + 1}. ${p.name}</div>
+          <div class="prod-price">R ${p.price.toFixed(2)}</div>
+        </div>`;
+    });
+    html += '<br>Or type <b>0</b> to go back to the main menu.';
+    return html;
+  }
+
+  // ── Build cart HTML ───────────────────────────────────────────────────────
+  function cartHtml() {
+    if (cart.length === 0) return 'Your cart is empty. Shop for something first! 🛒';
+    let total = 0;
+    let html = '🛒 <b>Your cart:</b><br>';
+    cart.forEach((item, i) => {
+      const sub = item.price * item.qty;
+      total += sub;
+      html += `<div class="cart-line">${i+1}. ${item.name} × ${item.qty} = R ${sub.toFixed(2)}</div>`;
+    });
+    html += `<div class="cart-total">Total: R ${total.toFixed(2)}</div>`;
+    return html;
+  }
+
+  // ── Main chatbot brain ────────────────────────────────────────────────────
+  function processUserMessage(msg) {
+    const m = msg.trim().toLowerCase();
+
+    // ── If we're waiting for a quantity ────────────────────────────────────
+    if (waitingForQty) {
+      const qty = parseInt(m);
+      if (isNaN(qty) || qty < 1) {
+        botReply('Please reply with a valid number, e.g. <b>2</b>');
+        return;
+      }
+      cart.push({ ...waitingForQty, qty });
+      const product = waitingForQty;
+      waitingForQty = null;
+      state = 'category';
+      botReply(
+        `✅ Added <b>${product.name}</b> × ${qty} to your cart!<br><br>` +
+        'What would you like to do next?',
+        [
+          { label: '🌽 Keep shopping crops', value: '1' },
+          { label: '🐄 Keep shopping animals', value: '2' },
+          { label: '🛒 View my cart', value: '3' },
+        ]
+      );
+      return;
+    }
+
+    // ── Navigation by number ───────────────────────────────────────────────
+    if (state === 'welcome' || m === '0' || m === 'hi' || m === 'hello' || m === 'menu' || m === 'start') {
+      state = 'category';
+      botReply(
+        '👋 Welcome to <b>FarmBot</b>!<br>Your one-stop shop for farming supplies.<br><br>' +
+        'What do you need today?',
+        [
+          { label: '🌽 Crop supplies', value: '1' },
+          { label: '🐄 Animal supplies', value: '2' },
+          { label: '🛒 View cart', value: '3' },
+        ]
+      );
+      return;
+    }
+
+    if (state === 'category') {
+      if (m === '1') {
+        state = 'crops';
+        currentProducts = catalogue.crops;
+        botReply(productsHtml(currentProducts));
+        return;
+      }
+      if (m === '2') {
+        state = 'animals';
+        currentProducts = catalogue.animals;
+        botReply(productsHtml(currentProducts));
+        return;
+      }
+      if (m === '3') {
+        botReply(cartHtml(), cart.length > 0
+          ? [{ label: '✅ Place order', value: 'order' }, { label: '🔙 Back to menu', value: '0' }]
+          : [{ label: '🔙 Back to menu', value: '0' }]
+        );
+        return;
+      }
+    }
+
+    if (state === 'crops' || state === 'animals') {
+      if (m === '0') {
+        state = 'category';
+        botReply('Back to the main menu! What do you need?', [
+          { label: '🌽 Crop supplies', value: '1' },
+          { label: '🐄 Animal supplies', value: '2' },
+          { label: '🛒 View cart', value: '3' },
+        ]);
+        return;
+      }
+      const num = parseInt(m);
+      if (!isNaN(num) && num >= 1 && num <= currentProducts.length) {
+        waitingForQty = currentProducts[num - 1];
+        botReply(`You selected: <b>${waitingForQty.name}</b> – R ${waitingForQty.price.toFixed(2)}<br><br>How many units would you like to order?`);
+        return;
+      }
+    }
+
+    if (m === 'order' || m === 'place order' || m === 'checkout') {
+      if (cart.length === 0) {
+        botReply('Your cart is empty! Please add some products first. 🛒');
+        return;
+      }
+      const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+      cart = [];
+      state = 'category';
+      botReply(
+        `🎉 <b>Order placed successfully!</b><br><br>` +
+        `Our delivery team will contact you within 24 hours.<br>` +
+        `Total charged: <b>R ${total.toFixed(2)}</b><br><br>` +
+        `Thank you for shopping with FarmBot! 🌾`
+      );
+      return;
+    }
+
+    // Fallback
+    botReply(
+      'Sorry, I did not understand that. 😕<br>Reply with a number or type <b>menu</b> to start over.',
+      [{ label: '🔙 Main menu', value: 'menu' }]
+    );
+  }
+
+  // ── Send handler ──────────────────────────────────────────────────────────
+  function sendMessage() {
+    const input = document.getElementById('input');
+    const msg   = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+    addBubble('user', msg);
+    processUserMessage(msg);
+  }
+
+  // Allow Enter key
+  document.getElementById('input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  // ── Boot: bot sends first message ─────────────────────────────────────────
+  botReply(
+    '👋 Hi! I am <b>FarmBot</b> 🌾<br>I help farmers buy crop and animal supplies.<br><br>Type <b>hi</b> or tap the button below to get started!',
+    [{ label: '🌾 Get started', value: 'hi' }],
+    800
+  );
+</script>
+
+</body>
+</html>
